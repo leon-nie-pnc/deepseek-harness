@@ -1,0 +1,28 @@
+name: Sync fork from upstream
+
+# 在 GitHub 服务器上定时把本 fork 的 master 从上游（deepseek-ai/deepseek-harness）更新，
+# 完全不依赖任何本地机器。GitHub 的 schedule 使用 UTC。
+on:
+  schedule:
+    - cron: '0 2 * * *'   # 02:00 UTC = 10:00 Asia/Shanghai（北京时间）
+  workflow_dispatch: {}    # 也可在 Actions 页面手动点“Run workflow”
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-fork
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge upstream into master
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # 官方 fork 同步端点：能快进就快进，否则做 merge，从不强制覆盖。
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/merge-upstream" \
+            -f branch=master
